@@ -16,8 +16,8 @@ static const CGFloat CSToastTopBottomOffset     = 20.0;
 static const CGFloat CSToastCornerRadius        = 20.0;
 static const CGFloat CSToastOpacity             = 0.8;
 static const CGFloat CSToastFontSize            = 13.0;
-static const CGFloat CSToastMaxTitleLines       = 0;
-static const CGFloat CSToastMaxMessageLines     = 0;
+static const CGFloat CSToastMaxTitleLines       = 1;
+static const CGFloat CSToastMaxMessageLines     = 3;
 static const NSTimeInterval CSToastFadeDuration = 0.3;
 
 // shadow appearance
@@ -358,6 +358,22 @@ static id styling;
     } else {
         imageWidth = imageHeight = imageLeft = 0.0;
     }
+
+    if (title == nil && message != nil && [message containsString:@"\n"]) {
+        // support titles being the first line in multi-line messages
+
+        NSArray *parts = [message componentsSeparatedByString: @"\n"];
+
+        title = [parts objectAtIndex: 0];
+
+        NSRange range;
+        range.location = 1;
+        range.length = [parts count];
+
+        parts = [parts subarrayWithRange:range];
+
+        message = [parts componentsJoinedByString:@"\n"];
+    }
     
     if (title != nil) {
         NSString * titleLabelTextColor = styling[@"textColor"];
@@ -366,8 +382,8 @@ static id styling;
         titleLabel = [[UILabel alloc] init];
         titleLabel.numberOfLines = CSToastMaxTitleLines;
         titleLabel.font = [UIFont boldSystemFontOfSize:theTextSize];
-        titleLabel.textAlignment = NSTextAlignmentCenter;
-        titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        titleLabel.textAlignment = NSTextAlignmentLeft;
+        titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
         titleLabel.textColor = theTitleLabelTextColor;
         titleLabel.backgroundColor = [UIColor clearColor];
         titleLabel.alpha = 1.0;
@@ -386,8 +402,8 @@ static id styling;
         messageLabel = [[UILabel alloc] init];
         messageLabel.numberOfLines = CSToastMaxMessageLines;
         messageLabel.font = [UIFont systemFontOfSize:theTextSize];
-        messageLabel.lineBreakMode = NSLineBreakByWordWrapping;
-        messageLabel.textAlignment = NSTextAlignmentCenter;
+        messageLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+        messageLabel.textAlignment = NSTextAlignmentLeft;
         messageLabel.textColor = theMessageLabelTextColor;
         messageLabel.backgroundColor = [UIColor clearColor];
         messageLabel.alpha = 1.0;
@@ -423,7 +439,10 @@ static id styling;
         messageWidth = messageHeight = messageLeft = messageTop = 0.0;
     }
 
-    CGFloat longerWidth = MAX(titleWidth, messageWidth);
+    // prevent really small toasts by having the toast take up most of the width of the screen on smaller devices
+    // common iOS phone widths are: 320, 375, 414
+    CGFloat longerWidth = MIN(400, self.bounds.size.width * CSToastMaxWidth); // was MAX(titleWidth, messageWidth);
+
     CGFloat longerLeft = MAX(titleLeft, messageLeft);
     
     // wrapper width uses the longerWidth or the image width, whatever is larger. same logic applies to the wrapper height
