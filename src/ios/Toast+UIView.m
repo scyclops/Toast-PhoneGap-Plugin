@@ -368,7 +368,7 @@ static id styling;
 
         NSRange range;
         range.location = 1;
-        range.length = [parts count];
+        range.length = [parts count] - 1;
 
         parts = [parts subarrayWithRange:range];
 
